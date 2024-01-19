@@ -4,8 +4,7 @@ on:
   push:
     tags:
       - '*.*.*'
-    branches:
-      - release-test
+
 jobs:
   release:
     runs-on: ubuntu-latest
