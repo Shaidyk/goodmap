@@ -20,12 +20,14 @@
                     <h4 class="card-title text-center">Edit Type of Place</h4>
                 </div>
                 <div class="card-body">
-                    {% if form.errors %}
+                    {% if form.non_field_errors %}
                         <div class="alert alert-danger" role="alert">
-                            Please correct the errors below.
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
                         </div>
                     {% endif %}
-                    <form method="post" id="typeOfPlaceForm">
+                    <form method="post" id="typeOfPlaceForm" novalidate>
                         {% csrf_token %}
                         <div class="mb-3">
                             <label for="typeName" class="form-label">Type of Place Name</label>
@@ -37,19 +39,16 @@
                         </div>
                         <!-- Поля для ввода URL и комментариев с проверкой чекбоксов -->
                         <div class="form-check">
-                        <input type="checkbox" name="enable_website" id="enable_website" class="form-check-input"
-                               {% if object.website %}checked{% endif %}>
-                        <label for="enable_website" class="form-check-label">Add a website</label>
-                        <input type="url" name="website" id="website" class="form-control"
-                               value="{{ object.website|default:'' }}" disabled>
-                    </div>
+                            <input type="checkbox" name="enable_website" id="enable_website" class="form-check-input"
+                                   {% if object.enable_website %}checked{% endif %}>
+                            <label for="enable_website" class="form-check-label">Website</label>
+                        </div>
                         <br>
-                    <div class="form-check">
-                        <input type="checkbox" name="enable_comments" id="enable_comments" class="form-check-input"
-                               {% if object.comments %}checked{% endif %}>
-                        <label for="enable_comments" class="form-check-label">Add a comments</label>
-                        <textarea name="comments" id="comments" class="form-control" disabled>{{ object.comments|default:'' }}</textarea>
-                    </div>
+                        <div class="form-check">
+                            <input type="checkbox" name="enable_comments" id="enable_comments" class="form-check-input"
+                                   {% if object.enable_comments %}checked{% endif %}>
+                            <label for="enable_comments" class="form-check-label">Comments</label>
+                        </div>
                         <br>
 
                         <!-- Динамически добавляемый контейнер для атрибутов -->

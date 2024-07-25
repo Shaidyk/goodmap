@@ -1,53 +1,95 @@
 $(document).ready(function () {
     $('.select2').select2({placeholder: "Select an option"});
 
-    // Получаем ID локации и типа места
+    function toggleRelatedField(checkbox, relatedContainer) {
+        if (checkbox.is(':checked')) {
+            relatedContainer.show();
+            relatedContainer.next('br').show();
+        } else {
+            relatedContainer.hide();
+            relatedContainer.next('br').hide();
+        }
+    }
+
     const locationId = $('#location_id').val() || window.location.pathname.match(/\/locations\/(\d+)\/edit/)[1];
     const attributesContainer = $('#attributes-container');
 
-    // Функция для загрузки атрибутов выбранного типа места
     function loadTypeOfPlaceAttributes(typeOfPlaceId) {
         $.ajax({
             url: `/type_of_place/${typeOfPlaceId}/attributes/`,
             method: 'GET',
             success: function (data) {
                 attributesContainer.empty();
+
+                var enable_website = false;
+                var enable_comments = false;
+
+                // Проходим по массиву и извлекаем значения enable_website и enable_comments
+                data = data.filter(item => {
+                    if (item.hasOwnProperty('enable_website')) {
+                        enable_website = item.enable_website;
+                        return false;
+                    }
+                    if (item.hasOwnProperty('enable_comments')) {
+                        enable_comments = item.enable_comments;
+                        return false;
+                    }
+                    return true;
+                });
+
+                // Обрабатываем поле Website
+                var websiteContainer = $('#website-container');
+                if (enable_website) {
+                    websiteContainer.show();
+                } else {
+                    websiteContainer.hide();
+                }
+
+                // Обрабатываем поле Comments
+                var commentsContainer = $('#comments-container');
+                if (enable_comments) {
+                    commentsContainer.show();
+                } else {
+                    commentsContainer.hide();
+                }
+
                 data.forEach(function (attr) {
                     var attributeId = `attribute-${attr.attribute_id}`;
-                    var checkbox = $(`<input>`, {
+                    var checkboxDiv = $('<div>', {class: 'form-check'}).appendTo(attributesContainer);
+                    var checkbox = $('<input>', {
                         type: 'checkbox',
                         class: 'form-check-input attribute-checkbox',
                         id: attributeId,
-                        name: `attribute_values_${attr.attribute_name}`,
-                        value: attr.attribute_id,
-                        change: function () {
-                            var valuesContainer = $(`#values-${attr.attribute_id}`);
-                            if ($(this).is(':checked')) {
-                                loadAttributeValues(attr.attribute_id, valuesContainer, []);
-                            } else {
-                                valuesContainer.empty();
-                            }
-                        }
-                    });
-                    var label = $(`<label>`, {
+                        name: `attribute_values_${attr.attribute_id}`,
+                        value: attr.attribute_id
+                    }).appendTo(checkboxDiv);
+
+                    $('<label>', {
                         class: 'form-check-label',
                         for: attributeId,
                         text: attr.attribute_name
-                    });
-                    var div = $(`<div>`, {class: 'form-check'}).append(checkbox).append(label);
-                    var valuesContainer = $(`<div>`, {
+                    }).appendTo(checkboxDiv);
+
+                    $('<br>').appendTo(attributesContainer);
+
+                    var valuesContainer = $('<div>', {
                         id: `values-${attr.attribute_id}`,
                         class: 'attribute-values-container'
+                    }).appendTo(attributesContainer);
+
+                    $('<br>').appendTo(attributesContainer).hide();
+
+                    checkbox.change(function () {
+                        toggleRelatedField($(this), valuesContainer);
                     });
 
-                    attributesContainer.append(div).append(`<br>`).append(valuesContainer).append(`<br>`);
-                    // Проверка, выбран ли атрибут
                     if (existingAttributes && existingAttributes[attr.attribute_id]) {
                         checkbox.prop('checked', true);
                         loadAttributeValues(attr.attribute_id, valuesContainer, existingAttributes[attr.attribute_id]);
                     } else {
                         loadAttributeValues(attr.attribute_id, valuesContainer, []);
                     }
+                    toggleRelatedField(checkbox, valuesContainer);
                 });
             },
             error: function () {
@@ -65,15 +107,19 @@ $(document).ready(function () {
                     class: 'form-control select2',
                     name: `selected_values_${attributeId}[]`,
                     multiple: 'multiple'
-                });
+                }).appendTo(container);
 
                 values.forEach(function (value) {
                     var isSelected = Array.isArray(selectedValues) && selectedValues.includes(value.id);
-                    select.append(new Option(value.content, value.id, isSelected, isSelected));
+                    $('<option>', {
+                        value: value.id,
+                        text: value.content,
+                        selected: isSelected
+                    }).appendTo(select);
                 });
 
-                container.html(select);
-                select.select2(); // Re-initialize select2 for dynamic content
+                select.select2();
+                select.next('.select2-container').css('width', '100%');
             },
             error: function () {
                 console.error(`Error loading values for attribute ${attributeId}.`);
@@ -81,8 +127,6 @@ $(document).ready(function () {
         });
     }
 
-
-    // Загрузка существующих атрибутов и их значений для локации
     function loadExistingAttributes() {
         $.ajax({
             url: `/locations/${locationId}/selected_attributes/`,
@@ -111,14 +155,13 @@ $(document).ready(function () {
     loadExistingAttributes();
 });
 
-
 function initializeMap() {
     var southWest = L.latLng(-89.98155760646617, -180),
         northEast = L.latLng(89.99346179538875, 180);
     var bounds = L.latLngBounds(southWest, northEast);
 
     var map = L.map('map', {
-        center: [51.505, -0.09],
+        center: [52.232, 21.01],
         zoom: 13,
         minZoom: 2,
         maxBounds: bounds,
@@ -146,8 +189,8 @@ function initializeMap() {
         updateMarker(coord.lat, coord.lng);
     });
 
-    var initialLat = $('input[name="latitude"]').val() ? parseFloat($('input[name="latitude"]').val()) : 51.505;
-    var initialLng = $('input[name="longitude"]').val() ? parseFloat($('input[name="longitude"]').val()) : -0.09;
+    var initialLat = $('input[name="latitude"]').val() ? parseFloat($('input[name="latitude"]').val()) : 52.232;
+    var initialLng = $('input[name="longitude"]').val() ? parseFloat($('input[name="longitude"]').val()) : 21.01;
     updateMarker(initialLat, initialLng);
     map.panTo(new L.LatLng(initialLat, initialLng));
 }

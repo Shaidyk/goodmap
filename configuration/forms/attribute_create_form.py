@@ -15,7 +15,7 @@ class AttributeCreateForm(forms.ModelForm):
 
     class Meta:
         model = Attribute
-        fields = ['name', 'values']
+        fields = ['name', 'values', 'visible_in_categories', 'visible_in_visible_data']
 
     def __init__(self, *args, **kwargs):
         super(AttributeCreateForm, self).__init__(*args, **kwargs)

@@ -1,6 +1,50 @@
 $(document).ready(function () {
-    // Инициализация Select2 для всех select элементов
-    $('.select2').select2();
+    $('#btn-editable').on('click', '.delete-location-button', function () {
+        var $this = $(this);
+        var locationId = $this.closest('tr').data('location-id');
+        console.log(locationId)
+        $('.confirm-delete-location-button').remove();
+
+        $('<button>').text('Confirm')
+            .addClass('confirm-delete-location-button btn btn-warning')
+            .data('location-id', locationId)
+            .insertAfter($this);
+
+        $this.hide();
+    });
+
+    $('#btn-editable').on('click', '.confirm-delete-location-button', function () {
+        var locationId = $(this).data('location-id');
+        $.ajax({
+            url: `/locations/${locationId}/delete/`,
+            method: 'POST',
+            data: {
+                'id': locationId,
+                'csrfmiddlewaretoken': getCookie('csrftoken'),
+            },
+            success: function (response) {
+                location.reload(); // Перезагружаем страницу для обновления списка типов мест
+            },
+            error: function (xhr, status, error) {
+                console.error("An error occurred: " + error);
+            }
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                var cookie = $.trim(cookies[i]);
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 
     $('form#filter-form').on('submit', function (e) {
         e.preventDefault();
@@ -58,7 +102,15 @@ $(document).ready(function () {
 
     $('#id_type_of_place').change(function () {
         var typeOfPlaceId = $(this).val();
-        updateAttributes(typeOfPlaceId);
+
+        if (!typeOfPlaceId) {
+            // Если выбрано "No Type of Place" (пустое значение)
+            $('#id_attribute').empty().append('<option value="">No Attributes</option>').trigger('change');
+            $('#id_attribute_value').empty().trigger('change');
+        } else {
+            // Загрузка атрибутов для выбранного типа места
+            updateAttributes(typeOfPlaceId);
+        }
     });
 
     $('#id_attribute').change(function () {
@@ -66,8 +118,10 @@ $(document).ready(function () {
         var typeOfPlaceId = $('#id_type_of_place').val();
 
         if (attributeId) {
+            // Загрузка значений атрибутов для выбранного атрибута и типа места
             updateAttributeValues(attributeId, typeOfPlaceId);
         } else {
+            // Если атрибут не выбран, очистить "Attribute Value"
             $('#id_attribute_value').empty().trigger('change');
         }
     });

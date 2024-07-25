@@ -51,6 +51,7 @@
                                 <label for="roleSelect" class="form-label">Role</label>
                                 <select class="form-control" id="roleSelect" name="role">
                                     {% for role in roles %}
+                                        {{ role }}
                                         <option value="{{ role.id }}">{{ role.name }}</option>
                                     {% endfor %}
                                 </select>
@@ -81,11 +82,4 @@
 
 {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#roleSelect').select2({
-                placeholder: "Select a role",
-            });
-        });
-    </script>
 {% endblock extra_js %}

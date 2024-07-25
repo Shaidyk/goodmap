@@ -1,6 +1,7 @@
 from django import forms
-from configuration.models import Attribute, Value
 from django.db import transaction
+
+from configuration.models import Attribute, Value
 
 
 class AttributeForm(forms.ModelForm):
@@ -14,7 +15,7 @@ class AttributeForm(forms.ModelForm):
     )
     class Meta:
         model = Attribute
-        fields = ['name', 'values']
+        fields = ['name', 'values', 'visible_in_categories', 'visible_in_visible_data']
 
     def __init__(self, *args, **kwargs):
         super(AttributeForm, self).__init__(*args, **kwargs)
