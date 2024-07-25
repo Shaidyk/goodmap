@@ -1,5 +1,6 @@
 from django import forms
 from django.forms import ModelForm
+
 from configuration.models import TypeOfPlaceAttribute, TypeOfPlace, Attribute
 from locations.models import Location
 
@@ -9,6 +10,7 @@ class LocationCreateForm(ModelForm):
         queryset=TypeOfPlace.objects.all(),
         widget=forms.Select(attrs={'class': 'form-control select2'}),
         required=True,  # Now required
+        empty_label='No Type of Place',
         error_messages={'required': 'This field is required'}
     )
     attributes = forms.ModelMultipleChoiceField(
@@ -18,20 +20,23 @@ class LocationCreateForm(ModelForm):
     )
     status = forms.ChoiceField(
         choices=[('visible', 'Visible'), ('hidden', 'Hidden')],
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
         required=False
     )
     check_status = forms.ChoiceField(
-        choices=[('exists', 'Exists'), ('does_not_exist', 'Does Not Exist'), ('to_check', 'To Check')],
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        choices=[('exists', 'Exists'), ('does_not_exist', 'Does Not Exist'), ('check', 'To Check')],
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
         required=False
     )
+    website = forms.URLField(required=False)
+    comments = forms.CharField(widget=forms.Textarea, required=False)
 
     class Meta:
         model = Location
-        fields = ['name', 'latitude', 'longitude', 'image', 'type_of_place', 'status', 'check_status']
+        fields = ['name', 'latitude', 'longitude', 'image', 'type_of_place', 'status', 'check_status', 'website', 'comments']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'Enter location name', 'required': 'required'}),
             'latitude': forms.NumberInput(attrs={'class': 'form-control'}),
             'longitude': forms.NumberInput(attrs={'class': 'form-control'}),
             'image': forms.FileInput(attrs={'class': 'form-control'})
@@ -46,8 +51,8 @@ class LocationCreateForm(ModelForm):
         self.fields['longitude'].required = True
         for field_name in ['name', 'latitude', 'longitude']:
             self.fields[field_name].error_messages = {'required': 'This field is required'}
-        self.fields['status'].widget.attrs.update({'class': 'form-control'})
-        self.fields['check_status'].widget.attrs.update({'class': 'form-control'})
+        self.fields['status'].widget.attrs.update({'class': 'form-control select2'})
+        self.fields['check_status'].widget.attrs.update({'class': 'form-control select2'})
 
         if type_of_place_id:
             attributes = Attribute.objects.filter(
@@ -62,6 +67,7 @@ class LocationEditForm(forms.ModelForm):
         queryset=TypeOfPlace.objects.all(),
         widget=forms.Select(attrs={'class': 'form-control select2'}),
         required=True,  # Ensure consistency in field requirement as in CreateForm
+        empty_label='No Type of Place',
         error_messages={'required': 'This field is required'}
     )
     attributes = forms.ModelMultipleChoiceField(
@@ -71,20 +77,23 @@ class LocationEditForm(forms.ModelForm):
     )
     status = forms.ChoiceField(
         choices=[('visible', 'Visible'), ('hidden', 'Hidden')],
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
         required=False
     )
     check_status = forms.ChoiceField(
-        choices=[('exists', 'Exists'), ('does_not_exist', 'Does Not Exist'), ('to_check', 'To Check')],
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        choices=[('exists', 'Exists'), ('does_not_exist', 'Does Not Exist'), ('check', 'To Check')],
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
         required=False
     )
 
     class Meta:
         model = Location
-        fields = ['name', 'latitude', 'longitude', 'image', 'type_of_place', 'status', 'check_status']
+        fields = ['name', 'latitude', 'longitude', 'image', 'type_of_place', 'status', 'check_status', 'website', 'comments']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'Enter location name', 'required': 'required'}),
+            'website': forms.URLInput(attrs={'class': 'form-control'}),
+            'comments': forms.Textarea(attrs={'class': 'form-control', 'style': 'height: 38px;'}),
             'latitude': forms.NumberInput(attrs={'class': 'form-control'}),
             'longitude': forms.NumberInput(attrs={'class': 'form-control'}),
             'image': forms.FileInput(attrs={'class': 'form-control'})
@@ -112,4 +121,4 @@ class LocationEditForm(forms.ModelForm):
 
         # Pre-populate other fields
         self.fields['status'].initial = instance.status if instance else 'visible'
-        self.fields['check_status'].initial = instance.check_status if instance else 'to_check'
+        self.fields['check_status'].initial = instance.check_status if instance else 'check'

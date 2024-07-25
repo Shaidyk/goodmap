@@ -3,19 +3,16 @@ import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.serializers.json import DjangoJSONEncoder
-from django.forms import model_to_dict
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
-from django.utils.safestring import mark_safe
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
-
-from configuration.models import TypeOfPlaceAttribute, Attribute, TypeOfPlace, Value
-from locations.models import Location, LocationAttribute, LocationChangeLog
-from locations.forms import LocationCreateForm, LocationEditForm
 from django.urls import reverse_lazy
-from django.db.models import Q
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
+from configuration.models import TypeOfPlaceAttribute, Value
+from locations.forms import LocationCreateForm, LocationEditForm
 from locations.forms import LocationFilterForm
+from locations.models import Location, LocationAttribute, LocationChangeLog
+from locations.utils import log_attribute_changes, update_map_json
 from problematy.utils import get_user_permissions, PermissionMixin
 
 
@@ -103,8 +100,22 @@ class LocationCreateView(PermissionMixin, LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
+        changes = self.object.tracker.changed()
         self.object.save()
+
         type_of_place = form.cleaned_data.get('type_of_place')
+
+        posted_attribute_ids = {}
+        for key in self.request.POST:
+            if key.startswith('attribute_values_'):
+                attr_id = key.split('_')[-1]
+                try:
+                    attr_id = int(attr_id)
+                    value_ids = self.request.POST.getlist(f'selected_values_{attr_id}[]')
+                    posted_attribute_ids[attr_id] = value_ids
+                except ValueError:
+                    continue
+
         if type_of_place:
             for key, values in self.request.POST.items():
                 if key.startswith('attribute_values_'):
@@ -121,6 +132,16 @@ class LocationCreateView(PermissionMixin, LoginRequiredMixin, CreateView):
                         loc_attr.selected_values.set(Value.objects.filter(id__in=value_ids))
                     except (ValueError, TypeOfPlaceAttribute.DoesNotExist, AttributeError):
                         continue
+
+        log_attribute_changes(
+            location=self.object,
+            original_attr_values={},
+            posted_attribute_ids=posted_attribute_ids,
+            user=self.request.user,
+            changes=changes,
+            is_new=True
+        )
+        update_map_json()
         return super(LocationCreateView, self).form_valid(form)
 
     def get_form_kwargs(self):
@@ -137,7 +158,7 @@ class LocationUpdateView(PermissionMixin, LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('location_list')
 
     def has_permission(self):
-        required_permissions = {'change_location'}
+        required_permissions = {'can_edit_locations'}
         return any(self.user_perms.get(perm, False) for perm in required_permissions)
 
     def get_context_data(self, **kwargs):
@@ -158,25 +179,34 @@ class LocationUpdateView(PermissionMixin, LoginRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        original_attr_values = {
+            attr.type_of_place_attribute.attribute.id: list(set(attr.selected_values.values_list('id', flat=True)))
+            for attr in LocationAttribute.objects.filter(location=self.object).prefetch_related('selected_values')
+        }
+        changes = self.object.tracker.changed()
         response = super().form_valid(form)
         type_of_place_id = form.cleaned_data.get('type_of_place').id if form.cleaned_data.get('type_of_place') else None
 
         if type_of_place_id:
             possible_attributes = TypeOfPlaceAttribute.objects.filter(type_of_place_id=type_of_place_id)
-            # Теперь получаем ID атрибутов, а не ID связи типа места и атрибута
             attribute_ids = set(possible_attributes.values_list('attribute__id', flat=True))
 
             posted_attribute_ids = {}
             for key in self.request.POST.keys():
                 if key.startswith('attribute_values_'):
                     attr_name = key[len('attribute_values_'):]
-                    attr_id = self.request.POST[key]  # Теперь здесь ID атрибута
+                    attr_id = self.request.POST[key]  # ID атрибута
                     if attr_id.isdigit() and int(attr_id) in attribute_ids:
-                        value_ids = self.request.POST.getlist(f'selected_values_{attr_id}[]')
+                        value_ids = list(map(int, self.request.POST.getlist(f'selected_values_{attr_id}[]')))
                         posted_attribute_ids[int(attr_id)] = value_ids
 
             existing_attributes = LocationAttribute.objects.filter(location=self.object)
-            existing_attributes_dict = {attr.type_of_place_attribute_id: attr for attr in existing_attributes}
+
+            # Удаляем атрибуты, которые не были включены в запрос
+            attribute_ids_in_request = set(posted_attribute_ids.keys())
+            attributes_to_remove = existing_attributes.exclude(
+                type_of_place_attribute__attribute_id__in=attribute_ids_in_request)
+            attributes_to_remove.delete()
 
             for attr_id, value_ids in posted_attribute_ids.items():
                 attribute = TypeOfPlaceAttribute.objects.get(attribute_id=attr_id, type_of_place_id=type_of_place_id)
@@ -187,6 +217,17 @@ class LocationUpdateView(PermissionMixin, LoginRequiredMixin, UpdateView):
                 )
                 loc_attr.selected_values.set(value_ids)
 
+            # Логирование изменений
+            self.object.save()
+            log_attribute_changes(
+                location=self.object,
+                original_attr_values=original_attr_values,
+                posted_attribute_ids=posted_attribute_ids,
+                user=self.request.user,
+                changes=changes,
+                is_new=False
+            )
+        update_map_json()
         return response
 
     def get_form_kwargs(self):
@@ -195,13 +236,7 @@ class LocationUpdateView(PermissionMixin, LoginRequiredMixin, UpdateView):
         return kwargs
 
 
-class TypeOfPlaceAttributesView(PermissionMixin, LoginRequiredMixin, DetailView):
-    model = TypeOfPlace
 
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        attributes_with_values = self.object.get_attributes_with_values()
-        return JsonResponse(attributes_with_values, safe=False)
 
 
 class LocationDeleteView(PermissionMixin, LoginRequiredMixin, DeleteView):
@@ -209,6 +244,7 @@ class LocationDeleteView(PermissionMixin, LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('location_list')
 
     def has_permission(self):
+        # return self.user_perms.get('can_delete_locations', False)
         required_permissions = {'can_delete_locations'}
         return any(self.user_perms.get(perm, False) for perm in required_permissions)
 
@@ -231,10 +267,7 @@ class LocationDeleteView(PermissionMixin, LoginRequiredMixin, DeleteView):
         return redirect('location_list')
 
 
-def get_attribute_values(request, attribute_id):
-    values = Value.objects.filter(attribute_id=attribute_id).values_list('id', 'content')
-    result = [{'id': v[0], 'text': v[1]} for v in values]
-    return JsonResponse(result, safe=False)
+
 
 
 class LocationHistoryView(PermissionMixin, LoginRequiredMixin, ListView):

@@ -9,25 +9,27 @@ class LocationFilterForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Search...'})
     )
     status = forms.ChoiceField(
-        choices=Location.STATUS_CHOICES,
+        choices=[('', 'No Status')] + Location.STATUS_CHOICES,
         required=False,
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={'class': 'form-control select2'})
     )
     check_status = forms.ChoiceField(
-        choices=Location.CHECK_STATUS_CHOICES,
+        choices=[('', 'No Check Status')] + Location.CHECK_STATUS_CHOICES,
         required=False,
         widget=forms.Select(attrs={'class': 'form-control select2'})
     )
     type_of_place = forms.ModelChoiceField(
         queryset=TypeOfPlace.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+        empty_label='No Type of Place'
     )
     attribute = forms.ModelChoiceField(
         queryset=Attribute.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_attribute'}),
-        label='Attribute'
+        widget=forms.Select(attrs={'class': 'form-control select2', 'id': 'id_attribute'}),
+        label='Attribute',
+        empty_label='No Attributes'
     )
 
     attribute_value = forms.ModelMultipleChoiceField(

@@ -20,9 +20,11 @@
                     <h4 class="card-title">Edit User</h4>
                 </div>
                 <div class="card-body">
-                    {% if form.errors %}
+                    {% if form.non_field_errors %}
                         <div class="alert alert-danger" role="alert">
-                            Please correct the errors below.
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
                         </div>
                     {% endif %}
                     <form method="post">
@@ -89,11 +91,4 @@
 
 {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#roleSelect').select2({
-                placeholder: "Select a role",
-            });
-        });
-    </script>
 {% endblock extra_js %}

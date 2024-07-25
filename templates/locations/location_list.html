@@ -5,6 +5,7 @@
 {% block title %}Locations Management{% endblock %}
 
 {% block extra_css %}
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet"/>
 
 {% endblock %}
@@ -19,6 +20,10 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="card-title">Locations Management</h4>
+                    <button onclick="window.location.href='{% url 'download-locations' %}'" class="btn btn-primary">
+                        Download Locations JSON
+                    </button>
+
                     {% if request.user.is_superuser or can_add_locations %}
                         <a href="{% url 'location_create' %}" class="btn btn-success">Add Location</a>
                     {% endif %}
@@ -27,55 +32,58 @@
                     <!-- Filter Form -->
                     <form method="get" class="mb-4">
                         <div class="row align-items-end">
-                            <div class="col-md-12 mb-12">
+                            <!-- Поиск должен занимать всю строку на мобильных устройствах и 100% ширины на всех экранах -->
+                            <div class="col-12 mb-3">
                                 <label class="form-label" for="{{ filter_form.search.id_for_label }}">Search</label>
                                 {{ filter_form.search }}
                             </div>
                         </div>
                         <div class="row align-items-end">
-
-                            <div class="col-md-3 mb-3">
+                            <!-- Эти элементы занимают 3 колонки на средних и более крупных экранах, и всю ширину на мобильных -->
+                            <div class="col-12 col-md-4 mb-3">
                                 <label class="form-label" for="{{ filter_form.status.id_for_label }}">Status</label>
                                 {{ filter_form.status }}
                             </div>
-                            <div class="col-md-3 mb-3">
+                            <div class="col-12 col-md-4 mb-3">
                                 <label class="form-label" for="{{ filter_form.check_status.id_for_label }}">Check
                                     Status</label>
                                 {{ filter_form.check_status }}
                             </div>
-                            <div class="col-md-3 mb-3">
+                            <div class="col-12 col-md-4 mb-3">
                                 <label class="form-label" for="{{ filter_form.type_of_place.id_for_label }}">Type of
                                     Place</label>
                                 {{ filter_form.type_of_place }}
                             </div>
-                            <div class="col-md-2 mb-3 d-flex justify-content-end">
-                                <button type="submit" class="btn btn-primary me-2">Search</button>
-                                <a href="{% url 'location_list' %}" class="btn btn-outline-secondary">Reset</a>
-                            </div>
                         </div>
                         <div class="row align-items-end">
-                            <div class="col-md-6 mb-6">
+                            <!-- Поля атрибутов занимают 6 колонок на средних и более крупных экранах, и всю ширину на мобильных -->
+                            <div class="col-12 col-md-6 mb-3">
                                 <label class="form-label"
                                        for="{{ filter_form.attribute.id_for_label }}">Attribute</label>
                                 {{ filter_form.attribute }}
                             </div>
-                            <div class="col-md-6 mb-6">
+                            <div class="col-12 col-md-6 mb-3">
                                 <label class="form-label" for="{{ filter_form.attribute_value.id_for_label }}">Attribute
                                     Value</label>
                                 {{ filter_form.attribute_value }}
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-12 d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary me-2">Search</button>
+                                <a href="{% url 'location_list' %}" class="btn btn-outline-secondary">Reset</a>
+                            </div>
+                        </div>
                     </form>
-
                     <div class="table-responsive">
                         <table class="table table-centered mb-0" id="btn-editable">
                             <thead>
                             <tr>
                                 <th>#</th>
                                 <th>Name</th>
-                                <th>Type of Place</th>
+                                <th class="text-nowrap">Type of Place</th>
                                 <th>Status</th>
-                                <th>Check Status</th>
+                                <th class="text-nowrap">Check Status</th>
                                 <th>
                                     <div class="d-flex align-items-center justify-content-center gap-2">
                                         Actions
@@ -112,6 +120,10 @@
                                                class="btn btn-sm btn-primary">History</a>
                                         </div>
                                     </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No search results</td>
                                 </tr>
                             {% endfor %}
                             </tbody>

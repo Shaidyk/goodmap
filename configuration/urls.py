@@ -1,8 +1,9 @@
 from django.urls import path
+
 from configuration.views import AttributeListView, AttributeCreateView, AttributeUpdateView, AttributeDeleteView, \
     TypeOfPlaceListView, TypeOfPlaceCreateView, TypeOfPlaceUpdateView, TypeOfPlaceDeleteView, GeneralSettingsView, \
-    get_attributes, get_values, GetAttributeValuesView, get_attributes_for_type_of_place, AttributeValuesForPlaceView
-from locations.views import TypeOfPlaceAttributesView, get_attribute_values
+    get_attributes, get_values, get_attributes_for_type_of_place, AttributeValuesForPlaceView, \
+    TypeOfPlaceAttributesView, get_attribute_values
 
 urlpatterns = [
     #  Attributes

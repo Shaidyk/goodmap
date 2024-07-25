@@ -1,26 +1,4 @@
 $(document).ready(function () {
-    function toggleField(checkbox, field) {
-        if (checkbox.is(':checked')) {
-            field.removeAttr('disabled');
-        } else {
-            field.attr('disabled', 'disabled').val('');
-        }
-    }
-
-    var enableWebsite = $('#enable_website');
-    var websiteField = $('#website');
-    toggleField(enableWebsite, websiteField);
-    enableWebsite.change(function () {
-        toggleField($(this), websiteField);
-    });
-
-    var enableComments = $('#enable_comments');
-    var commentsField = $('#comments');
-    toggleField(enableComments, commentsField);
-    enableComments.change(function () {
-        toggleField($(this), commentsField);
-    });
-
     let selectedAttributes = new Set();
     let totalAttributeCount = new Set();
 

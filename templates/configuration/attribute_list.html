@@ -28,6 +28,8 @@
                                 <th>#</th>
                                 <th>Attribute</th>
                                 <th>Values</th>
+                                <th>Visible in "Categories"</th>
+                                <th>Visible in "Visible Data"</th>
                                 <th>
                                     <div class="d-flex align-items-center justify-content-center gap-2">
                                         Actions
@@ -41,6 +43,20 @@
                                     <td>{{ forloop.counter0|add:start_index }}</td>
                                     <td>{{ attribute.name }}</td>
                                     <td>{{ attribute.get_values_list|join:", " }}</td>
+                                    <td>
+                                        {% if attribute.visible_in_categories %}
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times-circle text-danger"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attribute.visible_in_visible_data %}
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times-circle text-danger"></i>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center justify-content-center gap-2">
                                             <a href="{% url 'attribute_edit' attribute.id %}"

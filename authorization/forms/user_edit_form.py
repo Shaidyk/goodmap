@@ -30,7 +30,7 @@ class EditUserForm(UserChangeForm):
 
         if password1 or password2:  # Если есть хоть одно поле не пустое
             if password1 != password2:
-                raise forms.ValidationError("Пароли не совпадают")
+                raise forms.ValidationError("Passwords do not match.")
         return cleaned_data
 
     def save(self, commit=True):

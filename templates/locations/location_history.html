@@ -11,7 +11,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title">Location History</h4>
+                    <h4 class="card-title">Location Changes History</h4>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -19,16 +19,16 @@
                             <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Change Description</th>
-                                <th>Changed By</th>
-                                <th>Change Date</th>
+                                <th class="text-nowrap">Change Description</th>
+                                <th class="text-nowrap">Changed By</th>
+                                <th class="text-nowrap">Change Date</th>
                             </tr>
                             </thead>
                             <tbody>
                             {% for log in history %}
                                 <tr>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td>{{ log.change_description }}</td>
+                                    <td>{{ forloop.counter0|add:start_index }}</td>
+                                    <td>{{ log.change_description|safe }}</td>
                                     <td>{{ log.user.get_full_name }}</td>
                                     <td>{{ log.change_date|date:"Y-m-d H:i" }}</td>
                                 </tr>

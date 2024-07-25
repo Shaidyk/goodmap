@@ -6,8 +6,8 @@ from configuration.models import Attribute, Value
 class TypeOfPlace(models.Model):
     name = models.CharField(max_length=100)
     attributes = models.ManyToManyField(Attribute, through='TypeOfPlaceAttribute')
-    website = models.URLField(max_length=255, blank=True, null=True)
-    comments = models.TextField(blank=True, null=True)
+    enable_website = models.BooleanField(default=False)
+    enable_comments = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

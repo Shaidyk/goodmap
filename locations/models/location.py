@@ -1,10 +1,10 @@
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 from model_utils import FieldTracker
 
-from configuration.models import TypeOfPlace, Attribute, TypeOfPlaceAttribute, Value
 from authorization.models import CustomUser
+from configuration.models import TypeOfPlace, Attribute, TypeOfPlaceAttribute, Value
 
 
 class Location(models.Model):
@@ -16,7 +16,7 @@ class Location(models.Model):
     CHECK_STATUS_CHOICES = [
         ('exists', _('Exists')),
         ('does_not_exist', _('Does not exist')),
-        ('check', _('Check')),
+        ('check', _('To Check')),
     ]
 
     name = models.CharField(_('Name'), max_length=255, blank=False)
@@ -27,6 +27,8 @@ class Location(models.Model):
     longitude = models.DecimalField(_('Longitude'), max_digits=21, decimal_places=18, null=True, blank=True)
     image = models.ImageField(_('Image'), upload_to='locations/', null=True, blank=True)
     last_checked = models.DateField(_('Last Checked'), null=True, blank=True)
+    website = models.URLField(max_length=255, blank=True, null=True)
+    comments = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -37,25 +39,8 @@ class Location(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
-        is_new = self._state.adding  # True если объект новый, False если редактируется
-        changes = []
-
-        if not is_new:
-            for field in self.tracker.changed():
-                changes.append(f"{field} changed from {self.tracker.previous(field)} to {getattr(self, field)}")
-
+        changes = self.tracker.changed()
         super().save(*args, **kwargs)
-
-        if user:
-            change_description = (
-                f"{'Created new' if is_new else 'Updated'} location "
-                f"by user (id: {user.id} name: {user.get_full_name()}). {'; '.join(changes) if changes else ''}")
-            LocationChangeLog.objects.create(
-                location=self,
-                user=user,
-                change_description=change_description
-            )
 
     def get_coordinates(self):
         return f"[{self.latitude}, {self.longitude}]"
@@ -84,25 +69,6 @@ class LocationAttribute(models.Model):
 
     def get_selected_values_display(self):
         return ', '.join([value.content for value in self.selected_values.all()])
-
-    def save(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
-
-        changes = []
-        for field in self.tracker.changed():
-            changes.append(f"{field} changed from {self.tracker.previous(field)} to {getattr(self, field)}")
-
-        super().save(*args, **kwargs)
-
-        if user:
-            change_description = (
-                f"Updated location attribute {self.type_of_place_attribute.attribute.name} "
-                f"by user (id: {user.id} name: {user.get_full_name()}). {'; '.join(changes) if changes else ''}")
-            LocationChangeLog.objects.create(
-                location=self.location,
-                user=user,
-                change_description=change_description
-            )
 
 
 class LocationChangeLog(models.Model):

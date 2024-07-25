@@ -11,9 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import os
-
-from pathlib import Path
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
 
@@ -29,7 +28,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG')
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['admin.problematy.space', 'problematy.space', 'animated-backup-427810-r5.uc.r.appspot.com']
 if DEBUG:
     ALLOWED_HOSTS.append('*')
 
@@ -140,3 +139,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+
+APPLICATION_BUCKET_NAME = os.getenv("APPLICATION_BUCKET_NAME")
+LOCATIONS_BLOB_PATH = os.getenv("LOCATIONS_BLOB_PATH")
